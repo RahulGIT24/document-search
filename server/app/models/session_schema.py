@@ -1,17 +1,14 @@
-from pydantic import BaseModel
-from typing import Optional
-from datetime import datetime
+from pydantic import BaseModel,Field
 from bson import ObjectId
-from pydantic import Field
+from datetime import datetime
+from typing import List
+from models.pdf_schema import PDF
 
-class Chat(BaseModel):
-    content:Optional[str]=None
-
-class ChatRes(BaseModel):
+class SessionRes(BaseModel):
     id: ObjectId = Field(..., alias="_id")
-    content: str
-    error: bool
+    pdfs: List[PDF]
     created_at: datetime
+    name:str
 
     class Config:
         allow_population_by_field_name = True

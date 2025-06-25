@@ -6,6 +6,7 @@
 from fastapi import APIRouter,Body,HTTPException,Query,Request
 from models.user_schema import RegisterUserRequest,LoginUserRequest,ForgotPassword,ResetPassword
 import bcrypt
+from models.session_schema import SessionRes
 from beanie.operators import And
 from jose import JWTError
 import jwt
@@ -15,6 +16,8 @@ from datetime import datetime,timedelta
 from lib.email_templates import get_verification_email_template,get_reset_password_mail
 from lib.send_email import send_email
 from fastapi.responses import JSONResponse
+from bson import ObjectId
+from models import Session
 # from pydantic import EmailStr
 
 router = APIRouter(prefix="/user")
@@ -269,3 +272,9 @@ async def logout():
     response.delete_cookie(key="access_token")
     response.delete_cookie(key="refresh_token")
     return response
+
+@router.get("/sessions")
+async def get(request:Request):
+    user=await User.find_one(User.email==request.state.user['email'])
+    sessions =await Session.find(Session.owner.id==ObjectId(user.id)).project(projection_model=SessionRes).to_list()
+    return sessions
