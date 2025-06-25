@@ -30,9 +30,10 @@ app.add_middleware(JWTAuthMiddleware,exempt_paths=exempt_paths)
 
 app.mount("/public", StaticFiles(directory='public'),name='public')
 
-from routers import user_routes,chat_routes
+from routers import user_routes,chat_routes,session_routes
 app.include_router(router=user_routes.router)
 app.include_router(router=chat_routes.router)
+app.include_router(router=session_routes.router)
 
 @app.get("/health-check")
 async def main():
