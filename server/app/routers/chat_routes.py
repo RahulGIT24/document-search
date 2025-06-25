@@ -8,11 +8,12 @@ from models import Session, User
 from lib.constants import BACKEND_URL
 from beanie.operators import And
 from models.pdf_schema import PDF
-from models.chat_schema import Chat
+from models.chat_schema import Chat as ChatSchema
 from typing import List,Optional
 from lib.vectors import store_in_vec_db
 from lib.similarity_search import perform_similarity_search
 from bson import ObjectId
+from models import Chat
 
 router = APIRouter(prefix='/chat')
 UPLOAD_DIR = "public"
@@ -70,28 +71,45 @@ async def start_chat(
     }
 
 @router.post('/get-response')
-async def get_response(request:Request,session_id=Query(...),payload:Chat=Body(...)):
-    content = payload.content
+async def get_response(request:Request,session_id=Query(...),payload:ChatSchema=Body(...)):
+    try:
+    #   print(x)
+        content = payload.content
 
-    if content==None:
-        raise HTTPException(status_code=400,detail='Content should be provided')
+        if content==None:
+            raise HTTPException(status_code=400,detail='Content should be provided')
 
-    user=await User.find_one(User.email==request.state.user['email'])
+        user=await User.find_one(User.email==request.state.user['email'])
 
-    if user == None:
-        raise HTTPException(status_code=404, detail="User not exists")
-    
-    session = await Session.find_one(
-        And(Session.id == ObjectId(session_id),Session.owner.id==ObjectId(user.id))
-    )
+        if user == None:
+            raise HTTPException(status_code=404, detail="User not exists")
+        
+        session = await Session.find_one(
+            And(Session.id == ObjectId(session_id),Session.owner.id==ObjectId(user.id))
+        )
 
-    if session==None:
-        raise HTTPException(status_code=404, detail="Session not exists")
-    pdf_ids=[]
-    for pdf in session.pdfs:
-        pdf_ids.append(pdf.id)
-    
-    res=perform_similarity_search(pdfids=pdf_ids,content=content)
+        if session==None:
+            raise HTTPException(status_code=404, detail="Session not exists")
+        pdf_ids=[]
+        for pdf in session.pdfs:
+            pdf_ids.append(pdf.id)
 
-    return {'message':res}
+        if len(pdf_ids)==0:
+            raise HTTPException(status_code=404, detail="No pdfs provided to answer")
 
+        chat = Chat(content=content,role='user',session=session)
+        await chat.save()
+        res=perform_similarity_search(pdfids=pdf_ids,content=content)
+
+        if res==False:
+            chat = Chat(content='Error while generating response',role='ai',session=session,error=True)
+        else:
+            chat = Chat(content=res,role='ai',session=session)
+        
+        await chat.save()
+
+        return {'message':res}
+
+    except Exception as e:
+      print(e)
+      print('An exception occurred')
