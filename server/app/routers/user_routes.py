@@ -10,7 +10,7 @@ from models.session_schema import SessionRes
 from beanie.operators import And
 from jose import JWTError
 import jwt
-from lib.constants import JWT_SECRET,BACKEND_URL
+from lib.constants import JWT_SECRET,FRONTEND_URL
 from models import User
 from datetime import datetime,timedelta
 from lib.email_templates import get_verification_email_template,get_reset_password_mail
@@ -43,7 +43,7 @@ async def register_user(payload:RegisterUserRequest=Body(...)):
         }
 
         verification_token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
-        body = get_verification_email_template(name=name,backend_url=BACKEND_URL,token=verification_token)
+        body = get_verification_email_template(name=name,frontend_url=FRONTEND_URL,token=verification_token)
         status = send_email(body=body,subject="Account Verification Required",to_email=email)
         if status:
             if user:
@@ -87,7 +87,7 @@ async def login_user(payload:LoginUserRequest=Body(...)):
             refresh_token = jwt.encode(refresh_payload, JWT_SECRET, algorithm="HS256")
             user.refreshToken=refresh_token
             await user.save()
-            response = JSONResponse(content={"message": "Logged In Successfully"})
+            response = JSONResponse(content={"email": user.email,'id':str(user.id),'name':user.name,'verified':user.verified})
             response.set_cookie(
                 key='access_token',
                 httponly=True,
@@ -107,7 +107,7 @@ async def login_user(payload:LoginUserRequest=Body(...)):
                 "exp": datetime.utcnow() + timedelta(hours=4)
             }
             verification_token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
-            body = get_verification_email_template(name=user.name,backend_url=BACKEND_URL,token=verification_token)
+            body = get_verification_email_template(name=user.name,backend_url=FRONTEND_URL,token=verification_token)
             status = send_email(body=body,subject="Account Verification Required",to_email=email)
             if status:
                 user.verificationToken=verification_token
@@ -154,7 +154,7 @@ async def forgot_password(payload:ForgotPassword=Body(...)):
             "exp": datetime.utcnow() + timedelta(hours=4)
         }
         forgot_password_token = jwt.encode(payload, JWT_SECRET, algorithm="HS256")
-        body = get_reset_password_mail(name=user.name,backend_url=BACKEND_URL,token=forgot_password_token)
+        body = get_reset_password_mail(name=user.name,frontend_url=FRONTEND_URL,token=forgot_password_token)
         status = send_email(body=body,subject="Account Recovery",to_email=email)
         user.forgotPasswordToken=forgot_password_token
         await user.save()

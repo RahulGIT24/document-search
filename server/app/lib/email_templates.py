@@ -1,4 +1,4 @@
-def get_verification_email_template(name:str,backend_url:str,token:str):
+def get_verification_email_template(name:str,frontend_url:str,token:str):
     return f'''
     <!DOCTYPE html>
         <html>
@@ -7,13 +7,13 @@ def get_verification_email_template(name:str,backend_url:str,token:str):
             <h2 style="color: #333;">Welcome, {name}!</h2>
             <p>Thank you for registering with us. Please verify your account by clicking the button below:</p>
 
-            <a href="{backend_url}/users/verify?token={token}" 
+            <a href="{frontend_url}/verify-token?token={token}" 
                 style="display: inline-block; padding: 12px 20px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px;">
                 Verify My Account
             </a>
 
             <p style="margin-top: 30px;">If the button doesn’t work, please copy and paste the link below into your browser:</p>
-            <p style="color: #555;">{backend_url}/users/verify?token={token}</p>
+            <p style="color: #555;">{frontend_url}/verify-token?token={token}</p>
 
             <p style="color: #888;">–This is valid for 4 hours Only</p>
             <p style="margin-top: 40px;">If you did not register, please ignore this email.</p>
@@ -23,7 +23,7 @@ def get_verification_email_template(name:str,backend_url:str,token:str):
         </html>
 '''
 
-def get_reset_password_mail(name:str,backend_url:str,token:str):
+def get_reset_password_mail(name:str,frontend_url:str,token:str):
     return f'''
     <!DOCTYPE html>
         <html>
@@ -32,13 +32,13 @@ def get_reset_password_mail(name:str,backend_url:str,token:str):
             <h2 style="color: #333;">Hello, {name}!</h2>
             <p>We came to know that you forgot your password.</p>
 
-            <a href="{backend_url}/users/reset-password?token={token}" 
+            <a href="{frontend_url}/reset-password?token={token}" 
                 style="display: inline-block; padding: 12px 20px; background-color: #007BFF; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px;">
                 Reset Password
             </a>
 
             <p style="margin-top: 30px;">If the button doesn’t work, please copy and paste the link below into your browser:</p>
-            <p style="color: #555;">{backend_url}/users/reset-password?token={token}</p>
+            <p style="color: #555;">{frontend_url}/reset-password?token={token}</p>
 
             <p style="color: #888;">–This is valid for 4 hours Only</p>
             <p style="margin-top: 40px;">If you did not request this, please ignore this email.</p>
