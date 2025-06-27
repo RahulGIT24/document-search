@@ -13,6 +13,7 @@ from bson import ObjectId
 from beanie.operators import And
 from models.pdf_schema import FileDelSchema
 from lib.vectors import delete_from_vector
+from models.session_schema import SessionRes
 
 router=APIRouter(prefix='/session')
 UPLOAD_DIR = "public"
@@ -64,12 +65,10 @@ async def create_session(
         pdfs=file_data,
         owner=user
     )
-    await session.insert()
+    new_session=await session.insert()
 
-    return {
-        "message": "Session created and PDFs uploaded",
-        "session_id": str(session.id)
-    }
+    new_session =await Session.find_one(Session.id==ObjectId(new_session.id)).project(projection_model=SessionRes)
+    return new_session
 
 @router.post('/add-file')
 async def add_files_to_existing_session(
@@ -119,4 +118,24 @@ async def delete_files_from_session(request:Request,session_id:str=Query(...),pa
     return {
         "message": f"Deleted PDF(s) from session",
         "remaining_pdfs": [pdf.name for pdf in session.pdfs]
+    }
+
+@router.delete("/")
+async def delete_session(request:Request,session_id:str=Query(...)):
+    user_data = request.state.user
+    user = await User.find_one(User.email == user_data["email"])
+    session = await Session.find_one(
+        And(
+            Session.id == ObjectId(session_id),
+            Session.owner.id == ObjectId(user.id)
+        )
+    )
+    
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    await session.delete()
+    
+    return {
+        "message": f"Session deleted with id {session_id}"
     }

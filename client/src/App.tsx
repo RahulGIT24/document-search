@@ -7,6 +7,8 @@ import Home from './pages/Home';
 import Verify from './pages/Verify';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import ChatPage from './pages/ChatPage';
+// import Chat from './pages/Chat';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -31,7 +33,7 @@ function App() {
       <Routes>
         <Route path="/" element={
           <ProtectedRoute>
-            <Home />
+            <ChatPage />
           </ProtectedRoute>
         } />
         <Route path="/home" element={

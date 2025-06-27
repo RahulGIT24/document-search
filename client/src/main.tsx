@@ -5,16 +5,17 @@ import App from './App.tsx'
 import { Toaster } from 'sonner'
 import { AuthProvider } from './contexts/AuthContext.tsx'
 import { BrowserRouter } from 'react-router'
+// import { ChatProvider } from './contexts/ChatContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
-  // <StrictMode>
   <>
     <BrowserRouter>
       <AuthProvider>
-        <App />
+        {/* <ChatProvider> */}
+          <App />
+        {/* </ChatProvider> */}
       </AuthProvider>
     </BrowserRouter>
     <Toaster position='bottom-left' />
   </>
-  // </StrictMode>,
 )
