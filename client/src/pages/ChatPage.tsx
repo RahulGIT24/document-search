@@ -6,9 +6,11 @@ import { Eye, Paperclip, Send, Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
 
 type Message = {
-    sender: 'user' | 'ai';
-    text: string;
+    role: 'user' | 'ai';
+    content: string;
     error?: boolean
+    _id?:string
+    created_at?:string
 };
 
 export default function ChatPage() {
@@ -24,6 +26,16 @@ export default function ChatPage() {
         const res = await axios.get(url, { withCredentials: true });
         setSessions(res.data);
     };
+
+    const getMessages = async()=>{
+        try {
+            const url = `${import.meta.env.VITE_BACKEND_URL}/chat/get-chats?session_id=${current?._id}`;
+            const res = await axios.get(url,{withCredentials:true})
+            setMessages(res.data)
+        } catch (error) {
+            setMessages([])
+        }
+    }
 
     const handleCreateNewSessionIfNeeded = async (files: FileList) => {
         const selectedFiles = Array.from(files);
@@ -82,7 +94,7 @@ export default function ChatPage() {
             return;
         }
 
-        setMessages((prev) => [...prev, { sender: 'user', text: input }]);
+        setMessages((prev) => [...prev, { role: 'user', content: input }]);
         setInput('');
 
         // api call
@@ -99,9 +111,9 @@ export default function ChatPage() {
                     }
                 }
             );
-            setMessages((prev) => [...prev, { sender: 'ai', text: res.data.message }]);
+            setMessages((prev) => [...prev, { role: 'ai', content: res.data.message }]);
         } catch (error) {
-            setMessages((prev) => [...prev, { sender: 'ai', text: 'Error while generating response', error: true }]);
+            setMessages((prev) => [...prev, { role: 'ai', content: 'Error while generating response', error: true }]);
         } finally {
             setThinking(false)
         }
@@ -155,6 +167,9 @@ export default function ChatPage() {
     useEffect(() => {
         getSessions();
     }, []);
+    useEffect(()=>{
+        getMessages()
+    },[current])
 
     return (
         <div className="flex" onClick={() => setViewPdfs(false)}>
@@ -231,12 +246,12 @@ export default function ChatPage() {
                         messages.map((msg, index) => (
                             <div
                                 key={index}
-                                className={`max-w-xl px-4 py-2 rounded-lg ${msg.sender === 'user'
+                                className={`max-w-xl px-4 py-2 rounded-lg ${msg.role === 'user'
                                     ? 'ml-auto bg-blue-600 text-white'
                                     : 'mr-auto bg-gray-700 text-gray-100'
                                     }`}
                             >
-                                {msg.text}
+                                {msg.content}
                             </div>
                         ))
                     )}
