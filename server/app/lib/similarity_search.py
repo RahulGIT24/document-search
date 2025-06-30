@@ -3,6 +3,7 @@ from langchain_google_genai import GoogleGenerativeAI
 from lib.qdrant import qdrant_client
 from lib.constants import QDRANT_COLLECTION_NAME, LLM_API_KEY
 from fastembed.embedding import DefaultEmbedding
+from qdrant_client.models import Filter, FieldCondition, MatchValue, SearchParams
 
 def perform_similarity_search(pdfids: List[str], content: str):
     try:
@@ -11,14 +12,29 @@ def perform_similarity_search(pdfids: List[str], content: str):
         vector = list(embedder.embed([content]))[0]
 
         # ✅ Step 2: Similarity search with filter on pdf_ids
+        pdf_id_conditions = [
+            FieldCondition(
+                key="metadata.pdf_id",
+                match=MatchValue(value=pdfid)
+            )
+            for pdfid in pdfids
+        ]
+
         hits = qdrant_client.search(
-        collection_name=QDRANT_COLLECTION_NAME,
-        query_vector=vector,
-        limit=3,
-        query_filter={
-            "must": [{"key": "metadata.pdf_id", "match": {"value": str(pdfid)}} for pdfid in pdfids]
-        }
-    )
+            collection_name=QDRANT_COLLECTION_NAME,
+            query_vector=vector,
+            limit=3,
+            query_filter=Filter(
+                must=[
+                    Filter(
+                        should=pdf_id_conditions,
+                        must_not=[]
+                    )
+                ]
+            ),
+            search_params=SearchParams(hnsw_ef=128)
+        )
+
         # ✅ Step 3: Extract context chunks
         context_chunks = [hit.payload.get("page_content", "") for hit in hits]
 

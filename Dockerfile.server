@@ -1,0 +1,14 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+RUN pip install uv
+
+COPY server/pyproject.toml .
+COPY server .
+
+RUN uv pip install -r pyproject.toml
+
+EXPOSE 9001
+
+CMD ["uvicorn", "run", "app/main.py"]

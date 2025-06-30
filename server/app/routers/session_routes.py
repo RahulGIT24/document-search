@@ -90,10 +90,16 @@ async def add_files_to_existing_session(
     session.pdfs.extend(new_pdfs)
     await session.save()
 
-    return {
-        "message": "New pdfs uploaded",
-        "session_id": str(session.id)
-    }
+    newPdfsArr = []
+    for p in new_pdfs:
+        dic = {
+            'id':p.id,
+            'name':p.name,
+            'url':p.url
+        }
+        newPdfsArr.append(dic)
+
+    return newPdfsArr
 
 @router.delete("/delete-files")
 async def delete_files_from_session(request:Request,session_id:str=Query(...),payload:FileDelSchema=Body(...)):

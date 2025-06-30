@@ -10,9 +10,13 @@ from lib.qdrant import qdrant_client
 def store_in_vec_db(pdf_id:str,chunks:List[str]):
     try:
         documents = [Document(
-            page_content=chunk,
-            metadata={"pdf_id": pdf_id, "chunk_id": str(uuid.uuid4())}
-        ) for chunk in chunks]
+    page_content=chunk,
+    metadata={
+        "pdf_id": pdf_id,
+        "chunk_id": str(uuid.uuid4()),
+        "source": "user_upload"
+    }
+) for chunk in chunks]
 
         embedding_model = FastEmbedEmbeddings()
 

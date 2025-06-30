@@ -8,10 +8,10 @@ type Props = {
     currentSessionId: string | null;
     onSelect: (s: Session) => void;
     onCreate: () => void;
-    deleteSession:(sessionId:string)=>Promise<void>
+    deleteSession: (sessionId: string) => Promise<void>
 };
 
-export default function SessionSidebar({ sessions, currentSessionId, onSelect, onCreate,deleteSession }: Props) {
+export default function SessionSidebar({ sessions, currentSessionId, onSelect, onCreate, deleteSession }: Props) {
     const [isOpen, setIsOpen] = useState(true);
     const { logout } = useAuth()
     const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
@@ -55,10 +55,10 @@ export default function SessionSidebar({ sessions, currentSessionId, onSelect, o
                         {sessions.map((s) => (
                             <li
                                 key={s._id}
-                                
+
                                 className={`cursor-pointer relative px-3 py-2 rounded-lg hover:bg-gray-800 transition ${s._id === currentSessionId
-                                        ? 'bg-gradient-to-r from-blue-700 to-purple-700 text-white'
-                                        : 'cursor-pointer'
+                                    ? 'bg-gradient-to-r from-blue-700 to-purple-700 text-white'
+                                    : 'cursor-pointer'
                                     }`}
                             >
                                 {isOpen ? (
@@ -74,10 +74,10 @@ export default function SessionSidebar({ sessions, currentSessionId, onSelect, o
                                         </div>
 
                                         {/* ⚙️ Ellipsis Menu */}
-                                        <div className="relative z-50" onClick={(e) => e.stopPropagation()}>
+                                        <div className="relative z-40" onClick={(e) => e.stopPropagation()}>
                                             <Ellipsis className="cursor-pointer" onClick={() => toggleMenu(s._id)} />
                                             {menuOpenId === s._id && (
-                                                <div className="absolute right-0 top-6 flex flex-col bg-gray-800 text-white shadow-md rounded z-50 min-w-[100px]">
+                                                <div className="absolute right-0 top-6 flex flex-col bg-gray-800 text-white shadow-md rounded z-40 min-w-[100px]">
                                                     <button
                                                         className="flex items-center gap-2 px-3 py-1 text-sm hover:bg-red-600"
                                                         onClick={(e) => {
@@ -108,16 +108,21 @@ export default function SessionSidebar({ sessions, currentSessionId, onSelect, o
                 onClick={() => { logout() }}
                 className="text-white flex justify-center items-center gap-x-2 hover:text-white p-2 text-xs transition border-t border-gray-800"
             >
-                {/* <div> */}
-                <p className='text-md'>Log Out</p> <LogOutIcon size={15} />
-                {/* </div> */}
+                {
+                    isOpen ?
+                        <>
+                            <p className='text-md'>Log Out</p> <LogOutIcon size={15} />
+                        </>
+                        :
+                        <LogOutIcon size={15} />
+                }
             </button>
-            <button
+            {/* <button
                 onClick={() => setIsOpen(!isOpen)}
                 className="text-gray-500 hover:text-white p-2 text-xs transition border-t border-gray-800"
             >
                 {isOpen ? 'Collapse ◀' : '▶'}
-            </button>
+            </button> */}
         </div>
     );
 }

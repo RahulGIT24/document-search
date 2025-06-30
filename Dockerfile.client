@@ -1,0 +1,18 @@
+FROM node:23.8.0-alpine
+
+WORKDIR /usr/src/app
+
+RUN npm install -g pnpm
+
+COPY client/package.json client/pnpm-lock.yaml /app/client/
+
+WORKDIR /app/client
+
+RUN pnpm install
+
+WORKDIR /app
+COPY . .
+
+WORKDIR /app/client
+
+CMD ["pnpm","run","dev"]

@@ -9,14 +9,14 @@ type Message = {
     role: 'user' | 'ai';
     content: string;
     error?: boolean
-    _id?:string
-    created_at?:string
+    _id?: string
+    created_at?: string
 };
-
 export default function ChatPage() {
     const [current, setCurrent] = useState<Session | null>(null);
     const [sessions, setSessions] = useState<Session[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
+    const [uploading, setUploading] = useState(false);
     const [viewPdfs, setViewPdfs] = useState(false);
     const [input, setInput] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -27,10 +27,11 @@ export default function ChatPage() {
         setSessions(res.data);
     };
 
-    const getMessages = async()=>{
+    const getMessages = async () => {
+        if (!current?._id) return;
         try {
             const url = `${import.meta.env.VITE_BACKEND_URL}/chat/get-chats?session_id=${current?._id}`;
-            const res = await axios.get(url,{withCredentials:true})
+            const res = await axios.get(url, { withCredentials: true })
             setMessages(res.data)
         } catch (error) {
             setMessages([])
@@ -44,6 +45,7 @@ export default function ChatPage() {
             toast.error("You can only upload a maximum of 4 PDFs.");
             return;
         }
+        setUploading(true);
         if (current) {
             await uploadToCurrentSession(current._id, files);
         } else {
@@ -59,10 +61,18 @@ export default function ChatPage() {
                 },
             });
 
-            const newSession: Session = res.data;
-            setSessions((prev) => [newSession, ...prev]);
-            setCurrent(newSession);
+            if (res.status == 200) {
+                const newSession: Session = res.data;
+                setSessions((prev) => [newSession, ...prev]);
+                setCurrent(newSession);
+                if (res.status == 200) {
+                    toast.success('File Uploaded successfully')
+                } else {
+                    toast.error('Error while uploading files')
+                }
+            }
         }
+        setUploading(false);
     };
 
     const uploadToCurrentSession = async (sessionId: string, files: FileList) => {
@@ -75,15 +85,31 @@ export default function ChatPage() {
             return;
         }
         for (const file of Array.from(files)) {
-            formData.append('pdfs', file);
+            formData.append('files', file);
         }
-
-        await axios.post(`${import.meta.env.VITE_BACKEND_URL}/user/sessions/${sessionId}/upload`, formData, {
-            withCredentials: true,
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
+        try {
+            const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/session/add-file?session_id=${sessionId}`, formData, {
+                withCredentials: true,
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }); ``
+            const newPdfs = res.data
+            setCurrent((prev) => {
+                if (!prev) return prev
+                return {
+                    ...prev,
+                    pdfs: [...(prev.pdfs || []), ...newPdfs]
+                }
+            })
+            if (res.status == 200) {
+                toast.success('File Uploaded to current session')
+            }
+        } catch (error) {
+            toast.error('Error uploading file in current session')
+        } finally {
+            setUploading(false)
+        }
     };
 
     const handleSend = async () => {
@@ -151,7 +177,7 @@ export default function ChatPage() {
     }
 
     const deleteSession = async (session_id: string) => {
-        const url = `${import.meta.env.VITE_BACKEND_URL}/session?session_id=${current?._id}`;
+        const url = `${import.meta.env.VITE_BACKEND_URL}/session?session_id=${session_id}`;
         try {
             const res = await axios.delete(url, {
                 withCredentials: true,
@@ -159,6 +185,8 @@ export default function ChatPage() {
             if (res.status == 200) toast.success('Session Deleted')
             const filtered = sessions.filter(c => c._id !== session_id)
             setSessions(filtered)
+            setCurrent(null)
+            setMessages([])
         } catch (error) {
             toast.error('Error while deleting sessions')
         }
@@ -167,54 +195,59 @@ export default function ChatPage() {
     useEffect(() => {
         getSessions();
     }, []);
-    useEffect(()=>{
+    useEffect(() => {
         getMessages()
-    },[current])
+    }, [current])
 
     return (
-        <div className="flex" onClick={() => setViewPdfs(false)}>
-            <SessionSidebar
-                sessions={sessions}
-                currentSessionId={current?._id || null}
-                onSelect={setCurrent}
-                deleteSession={deleteSession}
-                onCreate={clearChat}
-            />
+        <div className="flex h-screen overflow-hidden">
+            {/* Sidebar (fixed, scroll inside if needed) */}
+            <div className="w-64 bg-gray-900 h-full overflow-y-auto">
+                <SessionSidebar
+                    sessions={sessions}
+                    currentSessionId={current?._id || null}
+                    onSelect={setCurrent}
+                    deleteSession={deleteSession}
+                    onCreate={clearChat}
+                />
+            </div>
 
+            {/* Chat area */}
             <div className="flex-1 bg-gray-800 text-white flex flex-col">
                 {/* Top bar */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
                     <h2 className="text-xl font-semibold">Chat: {current?.name || 'No session yet'}</h2>
                     <div className="flex items-center gap-4">
-
-                        <div className='relative'>
-                            {
-                                current?.pdfs && current.pdfs.length > 0 &&
-                                <button className='flex justify-center border bg-gray-900 border-transparent rounded-xl p-3 hover:bg-gray-700 cursor-pointer text-white items-center gap-x-2.5' onClick={(e) => { setViewPdfs(!viewPdfs); e.stopPropagation() }}>
-                                    <Eye /><p>See Uploaded PDFs</p>
+                        <div className="relative">
+                            {current?.pdfs && current.pdfs.length > 0 && (
+                                <button
+                                    className="flex justify-center border bg-gray-900 border-transparent rounded-xl p-3 hover:bg-gray-700 cursor-pointer text-white items-center gap-x-2.5"
+                                    onClick={(e) => {
+                                        setViewPdfs(!viewPdfs);
+                                        e.stopPropagation();
+                                    }}
+                                >
+                                    <Eye />
+                                    <p>See Uploaded PDFs</p>
                                 </button>
-                            }
-                            {
-                                viewPdfs &&
-                                <div className='w-full absolute bg-gray-700 p-2 text-sm gap-y-2.5 z-50'>
-                                    {
-                                        current?.pdfs.map((p, i) => (
-                                            <div key={i} className='flex justify-between items-center mb-1.5' onClick={(e) => e.stopPropagation()}>
-                                                <a
-                                                    href={`${p.url}`}
-                                                    target='_blank'
-                                                    className='overflow-hidden text-ellipsis whitespace-nowrap max-w-[80%]'
-                                                    title={p.name} // shows full name on hover
-                                                >
-                                                    {p.name}
-                                                </a>
-                                                <Trash2Icon color='red' onClick={() => deleteFile(p.id)} />
-                                            </div>
-                                        ))
-                                    }
+                            )}
+                            {viewPdfs && (
+                                <div className="w-full absolute bg-gray-700 p-2 text-sm gap-y-2.5 z-50">
+                                    {current?.pdfs.map((p, i) => (
+                                        <div key={i} className="flex justify-between items-center mb-1.5" onClick={(e) => e.stopPropagation()}>
+                                            <a
+                                                href={p.url}
+                                                target="_blank"
+                                                className="overflow-hidden text-ellipsis whitespace-nowrap max-w-[80%]"
+                                                title={p.name}
+                                            >
+                                                {p.name}
+                                            </a>
+                                            <Trash2Icon color="red" onClick={() => deleteFile(p.id)} />
+                                        </div>
+                                    ))}
                                 </div>
-                            }
-
+                            )}
                         </div>
 
                         <button onClick={handleUploadClick} className="flex items-center gap-1 text-blue-400 hover:text-blue-300">
@@ -236,10 +269,20 @@ export default function ChatPage() {
                     </div>
                 </div>
 
-                {/* Chat area */}
+                {uploading && (
+                    <div className="flex items-center justify-center bg-yellow-100 text-yellow-800 text-sm px-4 py-2">
+                        <svg className="animate-spin h-4 w-4 mr-2 text-yellow-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                        </svg>
+                        Uploading file(s)... please wait
+                    </div>
+                )}
+
+                {/* Scrollable chat area */}
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     {!current && messages.length === 0 ? (
-                        <div className='w-full justify-center items-center'>
+                        <div className="w-full justify-center items-center">
                             <p className="text-gray-400 text-center">Upload PDF to start your chatting session</p>
                         </div>
                     ) : (
@@ -265,11 +308,10 @@ export default function ChatPage() {
                             </div>
                         </div>
                     )}
-
                 </div>
 
-                {/* Input box */}
-                <div className="p-4 border-t border-gray-700 flex items-center gap-4">
+                {/* Sticky input box */}
+                <div className="p-4 border-t border-gray-700 flex items-center gap-4 sticky bottom-0 bg-gray-800">
                     <input
                         type="text"
                         className="flex-1 bg-gray-700 text-white px-4 py-2 rounded-lg focus:outline-none"
@@ -277,10 +319,12 @@ export default function ChatPage() {
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                        disabled={uploading || thinking}
                     />
                     <button
                         onClick={handleSend}
                         className="bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all"
+                        disabled={uploading || thinking}
                     >
                         <Send className="w-4 h-4" />
                     </button>
@@ -288,4 +332,5 @@ export default function ChatPage() {
             </div>
         </div>
     );
+
 }
