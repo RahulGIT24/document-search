@@ -1,0 +1,53 @@
+services:
+  db:
+    image: mongo:7.0.21
+    ports:
+      - "27017"
+    volumes:
+      - mongo-data:/data/db
+  qdrant:
+    image: qdrant/qdrant
+    ports:
+      - "6333"
+      - "6334"
+
+  client:
+    build:
+      context: .
+      dockerfile: Dockerfile.client
+    ports:
+      - "5173:5173"
+    depends_on:
+      - server
+    environment:
+      - VITE_BACKEND_URL=http://localhost:9001
+
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    ports:
+      - "9001:9001"
+      - "465:465"
+    depends_on:
+      - db
+      - qdrant
+    environment:
+      - MONGODB_URL=mongodb://db:27017
+      - DB_NAME=docsearch
+      - SECRET=jflkjlkfjskljfklsjfklsjfkljdsklf
+      - EMAIL_ADDRESS=
+      - EMAIL_PASSWORD=
+      - BACKEND_URL=http://localhost:9001
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - QDRANT_COLLECTION_NAME=docsearch
+      - QDRANT_URL=http://qdrant:6333
+      - LLM_API_KEY=
+      - FRONTEND_URL=http://localhost:5173
+      - HOST=0.0.0.0
+      - PORT=9001
+
+volumes:
+  mongo-data:

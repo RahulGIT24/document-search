@@ -7,6 +7,7 @@ from middleware.auth import JWTAuthMiddleware
 from fastapi.staticfiles import StaticFiles
 import lib.qdrant 
 from lib.exempted_paths import exempt_paths
+from lib.constants import PORT,HOST
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -41,4 +42,4 @@ async def main():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=9001, reload=True)
+    uvicorn.run("main:app", host=str(HOST), port=int(PORT), reload=True)
