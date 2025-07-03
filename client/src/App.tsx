@@ -51,7 +51,7 @@ function App() {
             <ForgotPassword />
           </PublicRoute>
         } />
-        <Route path="/forgot-password" element={
+        <Route path="/reset-password" element={
           <PublicRoute>
             <ResetPassword />
           </PublicRoute>

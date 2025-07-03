@@ -5,7 +5,7 @@ from lib.constants import QDRANT_COLLECTION_NAME, LLM_API_KEY
 from fastembed.embedding import DefaultEmbedding
 from qdrant_client.models import Filter, FieldCondition, MatchValue, SearchParams
 
-def perform_similarity_search(pdfids: List[str], content: str):
+def perform_similarity_search(pdfids: List[str], content: str,chat_history:List[dict]):
     try:
         # ✅ Step 1: Embed the query
         embedder = DefaultEmbedding()
@@ -40,10 +40,13 @@ def perform_similarity_search(pdfids: List[str], content: str):
 
         # ✅ Step 4: Format context into a prompt
         context = "\n\n".join(context_chunks)
-        prompt = f"""You are answering a user question based on content from selected PDFs.
+        prompt = f"""You are answering a user question based on content from selected PDFs. Also chat history is passed so please handle this as well
 
     Context:
     {context}
+
+    Here is history
+    {chat_history}
 
     Question:
     {content}

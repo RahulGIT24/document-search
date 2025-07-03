@@ -40,7 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const url = `${import.meta.env.VITE_BACKEND_URL}/user/profile`
         try {
             const res = await axios.get(url, { withCredentials: true })
-            console.log(res);
             setUser(res.data)
         } catch (error: any) {
             return;
@@ -60,6 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(res.data)
         } catch (error: any) {
             toast.error(error.response.data.detail)
+            throw error
         }
     };
 
@@ -76,6 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             toast.success(res.data.message)
         } catch (error: any) {
             toast.error(error.response.data.detail)
+            throw error
         }
     };
 
@@ -86,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             toast.success(res.data.message)
         } catch (error: any) {
             toast.error(error.response.data.detail)
+            throw error
         }
     }
 
@@ -98,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             toast.success(res.data.message)
         } catch (error: any) {
             toast.error(error.response.data.detail)
+            throw error
         }
     }
 
@@ -114,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             toast.success(res.data.message)
         } catch (error: any) {
             toast.error(error.response.data.detail)
+            throw error
         }
     }
 
@@ -126,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             navigate('/home')
         } catch (error: any) {
             toast.error(error.response.data.detail)
+            throw error
         }
     };
 

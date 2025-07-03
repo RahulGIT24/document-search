@@ -8,11 +8,22 @@ from fastapi.staticfiles import StaticFiles
 import lib.qdrant 
 from lib.exempted_paths import exempt_paths
 from lib.constants import PORT,HOST
+from scheduler.dump_data import dump_data_in_db
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 
+scheduler = AsyncIOScheduler()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
+    scheduler.add_job(
+        dump_data_in_db,
+        IntervalTrigger(seconds=10),
+        name="Dump chat data to DB"
+    )
+    scheduler.start()
     yield
+    scheduler.shutdown()
 
 app = FastAPI(lifespan=lifespan)
 
@@ -37,7 +48,7 @@ app.include_router(router=chat_routes.router)
 app.include_router(router=session_routes.router)
 
 @app.get("/health-check")
-async def main():
+async def health():
     return {"message": "Hello World"}
 
 if __name__ == "__main__":

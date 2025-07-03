@@ -4,6 +4,7 @@ import type { Session } from '../types/session';
 import axios from 'axios';
 import { Eye, Paperclip, Send, Trash2Icon } from 'lucide-react';
 import { toast } from 'sonner';
+import { marked } from 'marked';
 
 type Message = {
     role: 'user' | 'ai';
@@ -17,6 +18,7 @@ export default function ChatPage() {
     const [sessions, setSessions] = useState<Session[]>([]);
     const [messages, setMessages] = useState<Message[]>([]);
     const [uploading, setUploading] = useState(false);
+    const bottomRef = useRef<HTMLDivElement>(null)
     const [viewPdfs, setViewPdfs] = useState(false);
     const [input, setInput] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,6 +76,10 @@ export default function ChatPage() {
         }
         setUploading(false);
     };
+
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
 
     const uploadToCurrentSession = async (sessionId: string, files: FileList) => {
         const formData = new FormData();
@@ -286,6 +292,7 @@ export default function ChatPage() {
                             <p className="text-gray-400 text-center">Upload PDF to start your chatting session</p>
                         </div>
                     ) : (
+
                         messages.map((msg, index) => (
                             <div
                                 key={index}
@@ -294,10 +301,18 @@ export default function ChatPage() {
                                     : 'mr-auto bg-gray-700 text-gray-100'
                                     }`}
                             >
-                                {msg.content}
+                                {msg.role === 'ai' ? (
+                                    <div
+                                        className="prose prose-sm prose-invert max-w-none"
+                                        dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) }}
+                                    />
+                                ) : (
+                                    msg.content
+                                )}
                             </div>
                         ))
                     )}
+                    <div ref={bottomRef} />
                     {thinking && (
                         <div className="max-w-fit px-4 py-2 rounded-lg mr-auto bg-gray-700 text-gray-100 flex items-center space-x-1 animate-pulse">
                             <span className="text-sm">Searching</span>

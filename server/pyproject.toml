@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "apscheduler>=3.11.0",
     "bcrypt>=4.3.0",
     "beanie>=1.30.0",
     "fastapi>=0.115.13",
@@ -23,6 +24,7 @@ dependencies = [
     "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.20",
     "qdrant-client[fastembed]>=1.14.3",
+    "redis>=6.2.0",
     "uuid>=1.30",
     "uvicorn>=0.34.3",
 ]
