@@ -1,4 +1,4 @@
-from pydantic import BaseModel,Field
+from pydantic import BaseModel,Field,field_serializer
 from bson import ObjectId
 from datetime import datetime
 from typing import List
@@ -9,6 +9,10 @@ class SessionRes(BaseModel):
     pdfs: List[PDF]
     created_at: datetime
     name:str
+
+    @field_serializer("created_at")
+    def serialize_created_at(self, value: datetime, _info):
+        return value.isoformat()
 
     class Config:
         allow_population_by_field_name = True

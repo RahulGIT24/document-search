@@ -1,5 +1,4 @@
 from models import Session,Chat
-from sqlalchemy import select
 from lib.redis import redis_client
 from bson import ObjectId
 from datetime import datetime
@@ -12,6 +11,7 @@ async def dump_data_in_db():
         history = redis_client.hget(f"session-{session_id}","history")
 
         session = await Session.find_one(Session.id==ObjectId(session_id))
+        updated_chats = []
 
         if not session:
             redis_client.delete(f"session-{session_id}")
@@ -28,7 +28,8 @@ async def dump_data_in_db():
                         if isinstance(chat["created_at"], str)
                         else chat["created_at"]
                 )
-                if not chat.get("id"):
+                if chat.get("id") or chat.get('saved')==True:
+                    updated_chats.append(chat)
                     continue
                 chat_obj = Chat(
                             content=chat["content"],
@@ -38,11 +39,13 @@ async def dump_data_in_db():
                             error=chat.get("error", False),
                 )
                 await chat_obj.save()
-                redis_client.delete(f"session-{session_id}")
+                chat["saved"] = True
+                updated_chats.append(chat)
                 print("Chat inserted in db")
             except Exception as e:
                 print(e)
                 print('An exception occurred')
+            redis_client.hset(key, "history", json.dumps(updated_chats))
 
 if __name__=="__main__":
     dump_data_in_db()

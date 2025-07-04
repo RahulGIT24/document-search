@@ -42,27 +42,28 @@ async def get_response(request:Request,session_id=Query(...),payload:ChatSchema=
             "role":'user',
             "session_id":session_id,
             "error":False,
+            "saved":False,
             "created_at":datetime.utcnow().isoformat()
         }
 
         check_redis = redis_client.hget(f"session-{session_id}","history")
+        chat_data_arr = json.loads(check_redis) if check_redis else []
         res=perform_similarity_search(pdfids=pdf_ids,content=content,chat_history=[])
 
         llm_q = {
             "content": res if res else "Error while generating response",
             "role":'ai',
             "session_id":session_id,
+            "saved":False,
             "error":not res,
             "created_at":datetime.utcnow().isoformat()
         }
 
-        if check_redis:
-            chat_data_arr = json.loads(check_redis) if check_redis else []
-            chat_data_arr.append(user_q)
-            chat_data_arr.append(llm_q)
-            key = f"session-{session_id}"
-            redis_client.hset(key,"history",json.dumps(chat_data_arr))
-            redis_client.expire(key,300)
+        chat_data_arr.append(user_q)
+        chat_data_arr.append(llm_q)
+        key = f"session-{session_id}"
+        redis_client.hset(key,"history",json.dumps(chat_data_arr))
+        redis_client.expire(key,300)
 
         return {'message':res}
 

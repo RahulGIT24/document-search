@@ -5,6 +5,7 @@ import os
 import shutil
 from lib.extract_text import get_text_chunks
 import uuid
+from lib.redis import redis_client
 from models import Session, User
 from lib.constants import BACKEND_URL
 from models.pdf_schema import PDF
@@ -49,6 +50,9 @@ def store_file_data_vectors(files:List[File]):
             raise HTTPException(status_code=400, detail="Error storing in vector db")
     return file_data
 
+def get_key(user_id:str):
+    return f"sessions-{user_id}"
+
 @router.post('/create-session', summary='Create session and upload Files')
 async def create_session(
     request: Request,
@@ -60,6 +64,7 @@ async def create_session(
     file_data = store_file_data_vectors(files=files)
     session_name = files[0].filename.rsplit('.', 1)[0]
 
+
     session = Session(
         name=session_name,
         pdfs=file_data,
@@ -68,6 +73,8 @@ async def create_session(
     new_session=await session.insert()
 
     new_session =await Session.find_one(Session.id==ObjectId(new_session.id)).project(projection_model=SessionRes)
+    key = get_key(str(user.id))
+    redis_client.delete(key,"sessions")
     return new_session
 
 @router.post('/add-file')
@@ -98,7 +105,8 @@ async def add_files_to_existing_session(
             'url':p.url
         }
         newPdfsArr.append(dic)
-
+    key = get_key(str(user.id))
+    redis_client.delete(key,"sessions")
     return newPdfsArr
 
 @router.delete("/delete-files")
@@ -120,7 +128,8 @@ async def delete_files_from_session(request:Request,session_id:str=Query(...),pa
             kept_pdfs.append(pdf)
     session.pdfs = kept_pdfs
     await session.save()
-
+    key = get_key(str(user.id))
+    redis_client.delete(key,"sessions")
     return {
         "message": f"Deleted PDF(s) from session",
         "remaining_pdfs": [pdf.name for pdf in session.pdfs]
@@ -139,7 +148,8 @@ async def delete_session(request:Request,session_id:str=Query(...)):
     
     if session is None:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+    key = get_key(str(user.id))
+    redis_client.delete(key,"sessions")
     await session.delete()
     
     return {

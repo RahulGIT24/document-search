@@ -8,7 +8,9 @@ from models.user_schema import RegisterUserRequest,LoginUserRequest,ForgotPasswo
 import bcrypt
 from models.session_schema import SessionRes
 from beanie.operators import And
+from lib.redis import redis_client
 from jose import JWTError
+import json
 import jwt
 from lib.constants import JWT_SECRET,FRONTEND_URL
 from models import User
@@ -273,8 +275,35 @@ async def logout():
     response.delete_cookie(key="refresh_token")
     return response
 
+def serialize_sessions(sessions):
+    serialized = []
+    for session in sessions:
+        serialized.append({
+            "id": str(session.id) if isinstance(session.id, ObjectId) else session.id,
+            "name": session.name,
+            "created_at": session.created_at.isoformat() if isinstance(session.created_at, datetime) else session.created_at,
+            "pdfs": [
+                {
+                    "name": pdf.name,
+                    "url": pdf.url,
+                    "id": str(pdf.id)
+                }
+                for pdf in session.pdfs
+            ]
+        })
+    return serialized
+
 @router.get("/sessions")
 async def get(request:Request):
-    user=await User.find_one(User.email==request.state.user['email'])
-    sessions =await Session.find(Session.owner.id==ObjectId(user.id)).project(projection_model=SessionRes).to_list()
+    user = await User.find_one(User.email==request.state.user['email'])
+    key = f"sessions-{user.id}"
+
+    check_redis = redis_client.hget(key,"sessions")
+    if check_redis:
+        print("Hit")
+        return json.loads(check_redis)
+
+    sessions = await Session.find(Session.owner.id==ObjectId(user.id)).project(projection_model=SessionRes).sort("created_at").to_list()
+    redis_client.hset(key,"sessions",json.dumps(serialize_sessions(sessions)))
+    redis_client.expire(key,600)
     return sessions
