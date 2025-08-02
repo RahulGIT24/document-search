@@ -4,6 +4,9 @@ A powerful **AI-powered PDF Reader and Chat application** that allows users to *
 
 ---
 
+## Demo Video
+[![Watch the video](/demo/cover.png)](https://drive.google.com/file/d/1PXVuuEgv2Zpym2RDDykjeo9Q845mAfxN/view?usp=sharing)
+
 ## 🚀 Features
 
 - ✅ **Upload PDFs** – Upload and manage multiple PDFs.  
